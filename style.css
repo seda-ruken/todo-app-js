@@ -224,7 +224,6 @@ input:focus {
 .select-dropdown:hover {
   display: flex;
   margin-top: 38px;
-
 }
 .select span {
   color: var(--white, #f7f7f7);
@@ -249,7 +248,6 @@ input:focus {
   transition: visibility 0.3s ease-in-out;
   position: absolute;
   z-index: 1;
-
 }
 
 .select-dropdown li {
@@ -357,16 +355,22 @@ input:focus {
 
 .checkbox-text-container {
   gap: 1rem;
-  width: 100%;
+  width: 93%;
+  justify-content: start;
+
 }
 
 .edit-delete-container {
-  display: none;
-}
-
-.list-container li:hover .edit-delete-container {
   display: flex;
 }
+
+/* .edit-delete-container {
+  display: none;
+} */
+
+/* .list-container li:hover .edit-delete-container {
+  display: flex;
+} */
 
 .edit-button:hover path {
   stroke: #534cc2;
@@ -380,7 +384,11 @@ input:focus {
 }
 
 .wrapper {
-  justify-content: space-around;
+  justify-content: flex-start;
+  display: flex;
+  height: 100vh;
+  position: relative;
+  align-items: center;
   flex-direction: column;
 }
 
@@ -471,4 +479,99 @@ input:focus {
   font-weight: 500;
   line-height: 100%; /* 18px */
   text-transform: uppercase;
+}
+
+.undo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 140px;
+  height: 30px;
+  border-radius: 4px;
+  border: 2px solid var(--purple, #6c63ff);
+  background: #534cc2;
+  position: relative;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  flex: row;
+}
+
+.undo-text {
+  color: #FFF;
+    font-family: Raleway;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    text-transform: uppercase;
+}
+.undo-button-container {
+  bottom: 0;
+  position: absolute;
+  left: 0;
+}
+#undo-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  border-radius: 4px;
+border: 2px solid var(--purple, #6C63FF);
+background: #534CC2;
+gap: 1rem;
+padding: 0.5rem;
+
+}
+
+#undo-button:hover {
+  border-radius: 4px;
+border: 2px solid var(--purple, #6C63FF);
+background: var(--purple, #6C63FF);
+}
+#undo-button span {
+  color: white;
+  display: inline-block;
+  line-height: 40px;
+}
+
+#countdown {
+  position: relative;
+  margin: auto;
+  height: 40px;
+  width: 40px;
+  text-align: center;
+}
+
+#countdown-number {
+  color: white;
+  display: inline-block;
+  line-height: 40px;
+}
+
+ .svg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  transform: rotateY(-180deg) rotateZ(-90deg);
+}
+
+.svg circle {
+  stroke-dasharray: 113px;
+  stroke-dashoffset: 0px;
+  stroke-linecap: round;
+  stroke-width: 2px;
+  stroke: white;
+  fill: none;
+  animation: countdown 10s linear infinite forwards;
+}
+
+@keyframes countdown {
+  from {
+    stroke-dashoffset: 0px;
+  }
+  to {
+    stroke-dashoffset: 113px;
+  }
 }

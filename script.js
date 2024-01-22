@@ -3,6 +3,7 @@ const headerSearchContainer = document.getElementsByClassName(
   "header-search-container"
 )[0];
 let notes = JSON.parse(localStorage.getItem("Notes")) || [];
+
 //notes = notes.map((note) => ({ text: note, completed: false })); // Add `completed` property
 const search = document.querySelector("#search-input");
 
@@ -66,22 +67,24 @@ function toggleTheme() {
 }
 
 function apply() {
+  document.querySelector(".overlay-content").style.display = "flex"
+
   var noteValue = document.getElementById("noteInput").value;
   const isCompleted = false;
 
-  // // Add the note to the notes array
-  // notes.push(noteValue);
+  if (noteValue !== '') {
+    notes.push({ text: noteValue, completed: isCompleted });
 
-  // localStorage.setItem("Notes", JSON.stringify(notes));
+    document.getElementById("noteInput").value = "";
 
-  //console.log("Notes:", notes);
-  notes.push({ text: noteValue, completed: isCompleted });
-  //localStorage.setItem("Notes", JSON.stringify(notes));
-  updateLocalStorage();
-  renderNotes();
-  closeOverlay();
-  changeColorOfNotes();
+    updateLocalStorage();
+    renderNotes();
+    closeOverlay();
+    changeColorOfNotes();
+   
+  }
 }
+
 
 function changeColorOfNotes() {
   document.querySelectorAll(".note-input").forEach((input) => {
@@ -91,12 +94,13 @@ function changeColorOfNotes() {
       //console.log(correspondingNote);
       if (correspondingNote && correspondingNote.classList.contains("note")) {
         if (this.checked) {
-          completed = true;
+          localStorage.setItem("completed", "true");
           //console.log(completed);
           correspondingNote.classList.add("checked-note");
         } else {
           //console.log(this.checked);
-          completed = false;
+          localStorage.setItem("completed", "false");
+
           correspondingNote.classList.remove("checked-note");
         }
         //console.log("Styles updated successfully.");
@@ -106,55 +110,107 @@ function changeColorOfNotes() {
     });
   });
 }
-
+let index;
+let deleteTimeout;
+let deletedNoteData;
 function editNote(index) {
-  const newNote = prompt("Edit your note:", notes[index][0]);
+  //const newNote = prompt("Edit your note:", notes[index][0]);
   //console.log(notes[index].text);
 
-  if (newNote !== null) {
-    notes[index].text = newNote;
-    renderNotes();
-    changeColorOfNotes();
-    updateLocalStorage();
-  }
+  let noteElement = document.getElementById(index);
+  noteElement.style.display = "none";
+  let inputEdit = document.getElementById(`note-input-${index}`);
+  let checkInput = document.getElementById(`check-input-${index}`)
+  let editButtonIndex = document.getElementById(`edit-button-${index}`)
+  editButtonIndex.style.display = "none"
+  // checkInput.style.display = "flex"
+  // inputEdit.style.display = "flex";
+  inputEdit.style.width = "100%";
+  inputEdit.style.border = "none";
+  inputEdit.style.backgroundColor = " #f7f7f7";
+
+  inputEdit.addEventListener("blur", () => {
+    // Handle input when focus is lost
+    const newNoteText = inputEdit.value;
+
+    if (newNoteText !== "") {
+      // Check for empty input
+      notes[index].text = newNoteText;
+      renderNotes();
+      changeColorOfNotes();
+      updateLocalStorage();
+    }
+  });
 }
 
 function deleteNote(index) {
-  ////console.log(index); // Implement your logic for deleting the note here
-  // You can use the 'index' parameter to identify the note to be deleted
-  // For example, you can use the splice method to remove the note from the array
-  notes.splice(index, 1);
-  // Update the UI
-  renderNotes();
-  updateLocalStorage();
-  changeColorOfNotes();
+  // Store temporary data for undo
+  deletedNoteData = notes.splice(index, 1)[0];
+  // Schedule deletion with delay for undo window
+  deleteTimeout = setTimeout(() => {
+    renderNotes(); // Update UI without deleted note
+    updateLocalStorage();
+    changeColorOfNotes();
+  }, 2000);
+
+  // Show undo button and start countdown
+  showUndoButton();
+
+  // countdown = 10;
+  // setInterval(function() {
+  //   countdown = --countdown <= 0 ? 10 : countdown;
+
+  //   // Clear timeout and undo deletion on countdown completion
+  //   if (countdown === 0) {
+  //     clearTimeout(deleteTimeout);
+  //     hideUndoButton();
+  //   }
+  // }, 1000);
+  setTimeout(() => {
+    hideUndoButton();
+  }, 5000);
+}
+
+function undoDelete(deleteTimeout, index, deletedNoteData) {
+  // Cancel deletion
+  clearTimeout(deleteTimeout);
+  hideUndoButton();
+
+  console.log("Undoing deletion for index:", index);
+  console.log("Deleted note data:", deletedNoteData);
+
+  // Check if deletedNoteData is valid
+  if (deletedNoteData !== undefined && deletedNoteData !== null) {
+    // Create a new array with the restored note
+    const updatedNotes = [...notes];
+    updatedNotes.splice(index, 0, deletedNoteData);
+    console.log(updatedNotes);
+    // Update the 'notes' array with the restored note
+    notes = updatedNotes;
+
+    renderNotes(); // Update UI with restored note
+    updateLocalStorage();
+    changeColorOfNotes();
+  } else {
+    console.error("Invalid deletedNoteData:", deletedNoteData);
+  }
+
+  console.log("Current state of notes array:", notes);
+}
+
+function hideUndoButton() {
+  const undoButton = document.getElementById("undo-button");
+  undoButton.style.visibility = "hidden"; // Or use 'display: none' to completely hide it
+  undoButton.removeEventListener("click", undoDelete); // Remove the event listener
+}
+
+function showUndoButton() {
+  const undoButton = document.getElementById("undo-button"); // Assuming you have an undo button element with this ID
+  undoButton.style.visibility = "visible"; // Make the button visible
+  undoButton.addEventListener("click", undoDelete); // Attach event listener
 }
 
 function renderNotes() {
-
-  document.querySelectorAll(".select-dropdown li").forEach((item) => {
-    item.addEventListener("click", () => {
-      if (item.innerText.toLowerCase() === "all") {
-        let completedNotes = notes.filter((note) => {
-          return note.completed === true;
-        });
-        console.log(completedNotes);
-      }
-      if (item.innerText.toLowerCase() === "complete") {
-        let inCompletedNotes = notes.filter((note) => {
-          return note.completed === false;
-        });
-        console.log(inCompletedNotes);
-      }
-      if (item.innerText.toLowerCase() === "incomplete") {
-        let completedNotes = notes.filter((note) => {
-          return note.completed === false;
-        });
-        console.log(completedNotes);
-      }
-    });
-  });
-
   if (notes.length == 0) {
     noteList.innerHTML = `
      <div class="no-data" >
@@ -613,7 +669,7 @@ function renderNotes() {
   </div>
   <span>Empty</span> `;
   } else {
-    //console.log(notes);
+    console.log(notes);
 
     noteList.innerHTML = notes
       .map((item, index) => {
@@ -621,59 +677,74 @@ function renderNotes() {
         return `<li class="container">
           <div class="checkbox-text-container container note-item">
           <input type="checkbox" class="note-input" id='noteInputCheckbox' >
-                      <p class="note" >${item.text}</p>
-            <div class="edit-delete-container">
-                    <button class="edit-button" onclick="editNote(${index})">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="15"
-                        height="14"
-                        viewBox="0 0 15 14"
-                        fill="none"
-                      >
-                        <path
-                          d="M7.67272 3.49106L1 10.1637V13.5H4.33636L11.0091 6.82736M7.67272 3.49106L10.0654 1.09837L10.0669 1.09695C10.3962 0.767585 10.5612 0.602613 10.7514 0.540824C10.9189 0.486392 11.0993 0.486392 11.2669 0.540824C11.4569 0.602571 11.6217 0.767352 11.9506 1.09625L13.4018 2.54738C13.7321 2.87769 13.8973 3.04292 13.9592 3.23337C14.0136 3.40088 14.0136 3.58133 13.9592 3.74885C13.8974 3.93916 13.7324 4.10414 13.4025 4.43398L13.4018 4.43468L11.0091 6.82736M7.67272 3.49106L11.0091 6.82736"
-                          stroke="#CDCDCD"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                        />
-                      </svg>
-                    </button>
-                    <button class="delete-button" onclick="deleteNote(${index})" >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 18 18"
-                        fill="none"
-                      >
-                        <path
-                          d="M3.87426 7.61505C3.80724 6.74386 4.49607 6 5.36983 6H12.6302C13.504 6 14.1928 6.74385 14.1258 7.61505L13.6065 14.365C13.5464 15.1465 12.8948 15.75 12.1109 15.75H5.88907C5.10526 15.75 4.4536 15.1465 4.39348 14.365L3.87426 7.61505Z"
-                          stroke="#CDCDCD"
-                        />
-                        <path
-                          d="M14.625 3.75H3.375"
-                          stroke="#CDCDCD"
-                          stroke-linecap="round"
-                        />
-                        <path
-                          d="M7.5 2.25C7.5 1.83579 7.83577 1.5 8.25 1.5H9.75C10.1642 1.5 10.5 1.83579 10.5 2.25V3.75H7.5V2.25Z"
-                          stroke="#CDCDCD"
-                        />
-                        <path
-                          d="M10.5 9V12.75"
-                          stroke="#CDCDCD"
-                          stroke-linecap="round"
-                        />
-                        <path
-                          d="M7.5 9V12.75"
-                          stroke="#CDCDCD"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                      <p class="note"  id=${index} >${item.text}</p>
+                      <input type="text" id="note-input-${index}" class="note-input" value="${item.text}" style="display: none;">
+
           </div>
+
+
+          <div class="edit-delete-container">
+          <button class="edit-button" onclick="editNote(${index})" id="edit-button-${index}"  >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="15"
+              height="14"
+              viewBox="0 0 15 14"
+              fill="none"
+            >
+              <path
+                d="M7.67272 3.49106L1 10.1637V13.5H4.33636L11.0091 6.82736M7.67272 3.49106L10.0654 1.09837L10.0669 1.09695C10.3962 0.767585 10.5612 0.602613 10.7514 0.540824C10.9189 0.486392 11.0993 0.486392 11.2669 0.540824C11.4569 0.602571 11.6217 0.767352 11.9506 1.09625L13.4018 2.54738C13.7321 2.87769 13.8973 3.04292 13.9592 3.23337C14.0136 3.40088 14.0136 3.58133 13.9592 3.74885C13.8974 3.93916 13.7324 4.10414 13.4025 4.43398L13.4018 4.43468L11.0091 6.82736M7.67272 3.49106L11.0091 6.82736"
+                stroke="#CDCDCD"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+
+            <svg style="display: none;" id="check-input-${index}"  width="24px" height="24px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#000000">
+
+<g id="SVGRepo_bgCarrier" stroke-width="0"/>
+
+<g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"/>
+
+<g id="SVGRepo_iconCarrier"> <defs> <path id="check-a" d="M4.29289322,0.292893219 C4.68341751,-0.0976310729 5.31658249,-0.0976310729 5.70710678,0.292893219 C6.09763107,0.683417511 6.09763107,1.31658249 5.70710678,1.70710678 L1.90917969,5.46118164 C1.5186554,5.85170593 0.885490417,5.85170593 0.494966125,5.46118164 C0.104441833,5.07065735 0.104441833,4.43749237 0.494966125,4.04696808 L4.29289322,0.292893219 Z"/> <path id="check-c" d="M10.7071068,13.2928932 C11.0976311,13.6834175 11.0976311,14.3165825 10.7071068,14.7071068 C10.3165825,15.0976311 9.68341751,15.0976311 9.29289322,14.7071068 L0.292893219,5.70710678 C-0.0976310729,5.31658249 -0.0976310729,4.68341751 0.292893219,4.29289322 L4.29289322,0.292893219 C4.68341751,-0.0976310729 5.31658249,-0.0976310729 5.70710678,0.292893219 C6.09763107,0.683417511 6.09763107,1.31658249 5.70710678,1.70710678 L2.41421356,5 L10.7071068,13.2928932 Z"/> </defs> <g fill="none" fill-rule="evenodd" transform="rotate(-90 11 7)"> <g transform="translate(1 1)"> <mask id="check-b" fill="#ffffff"> <use xlink:href="#check-a"/> </mask> <use fill="#D8D8D8" fill-rule="nonzero" xlink:href="#check-a"/> <g fill="#ffffff" mask="url(#check-b)"> <rect width="24" height="24" transform="translate(-7 -5)"/> </g> </g> <mask id="check-d" fill="#ffffff"> <use xlink:href="#check-c"/> </mask> <use fill="#000000" fill-rule="nonzero" xlink:href="#check-c"/> <g fill="#7600FF" mask="url(#check-d)"> <rect width="24" height="24" transform="translate(-6 -4)"/> </g> </g> </g>
+
+</svg>
+          </button>
+
+          <button class="delete-button" onclick="deleteNote(${index})" >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+            >
+              <path
+                d="M3.87426 7.61505C3.80724 6.74386 4.49607 6 5.36983 6H12.6302C13.504 6 14.1928 6.74385 14.1258 7.61505L13.6065 14.365C13.5464 15.1465 12.8948 15.75 12.1109 15.75H5.88907C5.10526 15.75 4.4536 15.1465 4.39348 14.365L3.87426 7.61505Z"
+                stroke="#CDCDCD"
+              />
+              <path
+                d="M14.625 3.75H3.375"
+                stroke="#CDCDCD"
+                stroke-linecap="round"
+              />
+              <path
+                d="M7.5 2.25C7.5 1.83579 7.83577 1.5 8.25 1.5H9.75C10.1642 1.5 10.5 1.83579 10.5 2.25V3.75H7.5V2.25Z"
+                stroke="#CDCDCD"
+              />
+              <path
+                d="M10.5 9V12.75"
+                stroke="#CDCDCD"
+                stroke-linecap="round"
+              />
+              <path
+                d="M7.5 9V12.75"
+                stroke="#CDCDCD"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
         
         </li>`;
       })
@@ -699,3 +770,25 @@ function searchTodo(e) {
   }
 }
 search.addEventListener("keyup", searchTodo);
+
+var countdownNumberEl = document.getElementById("countdown-number");
+var countdown = 5;
+
+countdownNumberEl.textContent = countdown;
+
+setInterval(function () {
+  countdown = --countdown <= 0 ? 6 : countdown;
+
+  countdownNumberEl.textContent = countdown;
+}, 1000);
+const overlay = document.querySelector('.overlay');
+
+overlay.addEventListener('click', closeModal);
+
+function closeModal() {
+  overlay.style.display = 'none';
+}
+const overlayContent = document.querySelector('.overlay-content');
+overlayContent.addEventListener('click', (event) => {
+  event.stopPropagation();
+});
